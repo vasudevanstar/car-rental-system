@@ -1,0 +1,22 @@
+# Vehicles - FastRide - FastRide
+
+[FastRide](http://localhost:8000/index.php)
+
+## Available Vehicles
+Find the perfect ride for your next journey.
+
+#### FastRide
+Premium car rental services delivering comfort, style, and reliability for all your transportation needs.
+
+#### Quick Links
+- [Browse Vehicles](http://localhost:8000/vehicles.php)
+- [Login](http://localhost:8000/login.php)
+- [Register](http://localhost:8000/register.php)
+[Browse Vehicles](http://localhost:8000/vehicles.php)
+[Login](http://localhost:8000/login.php)
+[Register](http://localhost:8000/register.php)
+
+#### Contact Us
+support@fastride.com
++1 234 567 8900
+© 2026 FastRide Car Rental. All rights reserved.

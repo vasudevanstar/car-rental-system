@@ -1,0 +1,6 @@
+vendor/
+.env
+composer.phar
+.vscode/
+uploads/
+*.log
