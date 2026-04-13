@@ -1,10 +1,32 @@
 <?php
 $pageTitle = "Admin Dashboard - FastRide";
 include 'includes/header.php';
-// Protected page
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+// Protected page (Allow Admin and Maintenance)
+if (!isset($_SESSION['user']) || ($_SESSION['user']['role'] !== 'admin' && $_SESSION['user']['role'] !== 'maintenance')) {
     header('Location: login.php?redirect=admin.php');
     exit;
+}
+
+$userRole = $_SESSION['user']['role'];
+
+// Handle Delivery Assignment (Pure PHP POST)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
+    require_once __DIR__ . '/config/db.php';
+    $rentalId = (int)$_POST['rentalId'];
+    $empId = (int)$_POST['employeeId'];
+    $address = $_POST['deliveryAddress'];
+
+    try {
+        $stmt = $pdo->prepare("UPDATE rentals SET delivery_employee_id = ?, delivery_address = ?, delivery_status = 'Assigned' WHERE id = ?");
+        $stmt->execute([$empId, $address, $rentalId]);
+        
+        $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, 'Delivery Assigned', ?)");
+        $logStmt->execute([$_SESSION['user']['id'], "Assigned Delivery Emp #$empId to Rental #$rentalId"]);
+        
+        $msg = "Delivery assigned successfully!";
+        header("Location: admin.php?msg=" . urlencode($msg));
+        exit;
+    } catch (PDOException $e) { $error = $e->getMessage(); }
 }
 ?>
 
@@ -216,12 +238,17 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
         <a href="index.php" class="admin-nav-link text-primary mb-3 pb-3 border-bottom border-white border-opacity-10">
           <i class="bi bi-house-door-fill"></i> Go to Site Home
         </a>
+        <?php if ($userRole === 'admin'): ?>
         <a href="#overview" class="admin-nav-link active" onclick="showSection('overview')">
           <i class="bi bi-grid-1x2-fill"></i> Overview
         </a>
-        <a href="#vehicles" class="admin-nav-link" onclick="showSection('vehicles')">
+        <?php endif; ?>
+
+        <a href="#vehicles" class="admin-nav-link <?php echo $userRole === 'maintenance' ? 'active' : ''; ?>" onclick="showSection('vehicles')">
           <i class="bi bi-car-front-fill"></i> Fleet Portfolio
         </a>
+
+        <?php if ($userRole === 'admin'): ?>
         <a href="#bookings" class="admin-nav-link" onclick="showSection('bookings')">
           <i class="bi bi-journal-text"></i> Bookings
         </a>
@@ -232,9 +259,17 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
         <a href="#users" class="admin-nav-link" onclick="showSection('users')">
           <i class="bi bi-people-fill"></i> User Accounts
         </a>
+        <?php endif; ?>
+
+        <?php if ($userRole === 'maintenance'): ?>
+        <a href="maintenance.php" class="admin-nav-link">
+          <i class="bi bi-tools"></i> Maintenance Portal
+        </a>
+        <?php endif; ?>
       </nav>
     </div>
 
+    <?php if ($userRole === 'admin'): ?>
     <div class="mb-5 px-2">
       <h6 class="text-uppercase small fw-bold text-muted mb-3" style="letter-spacing: 2px;">Marketing</h6>
       <nav>
@@ -243,6 +278,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
         </a>
       </nav>
     </div>
+    <?php endif; ?>
 
     <div class="mt-auto pt-5">
       <a href="javascript:void(0)" onclick="logout()" class="admin-nav-link text-danger">
@@ -329,20 +365,40 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
       </div>
 
       <div class="row g-4">
-        <div class="col-lg-8">
-          <div class="stat-card">
+        <div class="col-lg-7">
+          <div class="stat-card mb-4">
             <h5 class="fw-bold mb-4 d-flex align-items-center">
               <i class="bi bi-graph-up text-primary me-2"></i> Monthly Revenue Detail
             </h5>
-            <canvas id="revenueChart" style="max-height: 400px;"></canvas>
+            <canvas id="revenueChart" style="max-height: 350px;"></canvas>
+          </div>
+          <div class="row g-4">
+            <div class="col-md-6">
+                <div class="stat-card">
+                  <h6 class="fw-bold mb-3 small text-uppercase text-muted">Fleet Utilization</h6>
+                  <canvas id="utilizationChart" style="max-height: 200px;"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="stat-card">
+                  <h6 class="fw-bold mb-3 small text-uppercase text-muted">Revenue by Vehicle Type</h6>
+                  <canvas id="categoryRevChart" style="max-height: 200px;"></canvas>
+                </div>
+            </div>
           </div>
         </div>
-        <div class="col-lg-4">
-           <div class="stat-card">
+        
+        <div class="col-lg-5">
+           <div class="stat-card h-100 d-flex flex-column">
             <h5 class="fw-bold mb-4 d-flex align-items-center">
-              <i class="bi bi-pie-chart text-accent me-2"></i> Fleet Distribution
+              <i class="bi bi-list-stars text-accent me-2"></i> Recent System Activity
             </h5>
-            <canvas id="typeChart" style="max-height: 400px;"></canvas>
+            <div id="activityFeed" class="flex-grow-1 overflow-auto" style="max-height: 520px;">
+                <!-- Activity logs will go here -->
+                <div class="p-4 text-center text-muted small">
+                  <span class="spinner-border spinner-border-sm me-2"></span> Initializing feed...
+                </div>
+            </div>
           </div>
         </div>
       </div>
@@ -555,6 +611,53 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
           </button>
         </form>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Global Command Palette (Ctrl+K) -->
+<div class="modal fade" id="commandPalette" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content backdrop-blur-sm bg-white bg-opacity-95 shadow-2xl border-0 overflow-hidden" style="border-radius: 1.5rem;">
+      <div class="p-3 border-bottom d-flex align-items-center">
+        <i class="bi bi-search fs-4 text-primary me-3"></i>
+        <input type="text" id="paletteSearch" class="form-control border-0 shadow-none fs-5 p-2 bg-transparent" placeholder="Type to search users, cars, or bookings..." autofocus>
+        <span class="badge bg-light text-muted fw-normal ms-2 border">ESC to close</span>
+      </div>
+      <div id="paletteResults" class="modal-body p-0 overflow-auto" style="max-height: 400px;">
+        <div class="p-4 text-center text-muted small">Start typing to see results...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Assign Delivery -->
+<div class="modal fade" id="assignDeliveryModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="fw-bold">Assign Delivery Employee</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST">
+        <div class="modal-body">
+            <input type="hidden" name="rentalId" id="assignRentalId">
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Select Employee</label>
+                <select name="employeeId" id="deliveryEmpSelect" class="form-select border-0 bg-light" required>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label small fw-bold">Delivery Address</label>
+                <textarea name="deliveryAddress" id="deliveryAddr" class="form-control border-0 bg-light" rows="3" required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" name="assignDelivery" class="btn btn-primary rounded-pill px-4">Assign Now</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

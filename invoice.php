@@ -2,122 +2,160 @@
 // invoice.php
 require_once __DIR__ . '/config/db.php';
 
-// Check if rentalId is provided
-if (!isset($_GET['rentalId'])) {
-    die("Error: No rental ID provided.");
+if (!isset($_GET['id'])) {
+    die("Booking ID required.");
 }
 
-$rentalId = (int)$_GET['rentalId'];
+$rentalId = (int)$_GET['id'];
 
-// Fetch rental, vehicle, and customer details
-$stmt = $pdo->prepare("
-    SELECT r.*, v.name as vehicle_name, v.brand as vehicle_brand, c.name as customer_name, c.phone as customer_phone
-    FROM rentals r
-    JOIN vehicles v ON r.vehicle_id = v.id
-    JOIN customers c ON r.customer_email = c.email
-    WHERE r.id = ?
-");
-$stmt->execute([$rentalId]);
-$rental = $stmt->fetch();
+try {
+    // Fetch rental details
+    $stmt = $pdo->prepare("
+        SELECT r.*, c.name as customer_name, c.email as customer_email, c.phone as customer_phone,
+               v.brand, v.name as car_name, v.license_plate, v.color, v.rent_per_day
+        FROM rentals r
+        JOIN customers c ON r.customer_email = c.email
+        JOIN vehicles v ON r.vehicle_id = v.id
+        WHERE r.id = ?
+    ");
+    $stmt->execute([$rentalId]);
+    $rental = $stmt->fetch();
 
-if (!$rental) {
-    die("Error: Rental record not found.");
+    if (!$rental) {
+        die("Booking not found.");
+    }
+
+    // Fetch payment details
+    $stmt = $pdo->prepare("SELECT * FROM payments WHERE rental_id = ? ORDER BY created_at DESC LIMIT 1");
+    $stmt->execute([$rentalId]);
+    $payment = $stmt->fetch();
+
+} catch (PDOException $e) {
+    die("Database error: " . $e->getMessage());
 }
-
-// Check if generating PDF or viewing normally
-$isPdf = defined('IS_GENERATING_PDF');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Invoice #<?php echo $rental['id']; ?> - FastRide</title>
+    <title>Invoice #<?php echo $rentalId; ?> - FastRide</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body { font-family: 'Helvetica', sans-serif; color: #333; line-height: 1.6; margin: 0; padding: 20px; }
-        .invoice-box { max-width: 800px; margin: auto; padding: 30px; border: 1px solid #eee; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); font-size: 16px; background: #fff; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #6366f1; padding-bottom: 20px; margin-bottom: 20px; }
-        .header h1 { color: #6366f1; margin: 0; font-size: 28px; text-transform: uppercase; }
-        .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
-        .info-block h3 { margin-top: 0; font-size: 14px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 10px; }
-        .info-block p { margin: 0; font-size: 15px; }
-        table { width: 100%; line-height: inherit; text-align: left; border-collapse: collapse; margin-bottom: 30px; }
-        table th { background: #f8fafc; border-bottom: 2px solid #e2e8f0; padding: 12px; font-weight: bold; text-transform: uppercase; font-size: 13px; }
-        table td { padding: 12px; border-bottom: 1px solid #eee; }
-        .total-section { text-align: right; padding-top: 20px; }
-        .total-amount { font-size: 24px; font-weight: bold; color: #6366f1; }
-        .footer-note { margin-top: 50px; text-align: center; color: #94a3b8; font-size: 12px; }
-        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: #fff; }
-        .status-Completed { background: #10b981; }
-        .status-Pending { background: #f59e0b; }
-        .status-Confirmed { background: #3b82f6; }
-        
-        <?php if ($isPdf): ?>
-        /* PDF specific overrides */
-        .invoice-box { box-shadow: none; border: none; padding: 0; }
-        body { padding: 0; }
-        <?php endif; ?>
+        body { background: #f4f7f6; font-family: 'Inter', sans-serif; }
+        .invoice-card {
+            background: #fff;
+            max-width: 850px;
+            margin: 50px auto;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid #eee;
+        }
+        .invoice-header {
+            background: linear-gradient(135deg, #3f66f1 0%, #6366f1 100%);
+            padding: 40px;
+            color: white;
+        }
+        .invoice-body { padding: 50px; }
+        .table-custom th { background: #f8f9fa; border-top: none; }
+        .total-section { background: #f8f9fa; border-radius: 12px; padding: 20px; }
+        @media print {
+            body { background: white; }
+            .invoice-card { margin: 0; box-shadow: none; border: none; }
+            .btn-print { display: none; }
+        }
     </style>
 </head>
 <body>
-    <div class="invoice-box">
-        <div class="header">
+
+<div class="container container-print">
+    <div class="invoice-card">
+        <div class="invoice-header d-flex justify-content-between align-items-center">
             <div>
-                <h1>FastRide</h1>
-                <p>Premium Car Rental Service</p>
+                <h1 class="mb-1 fw-bold"><i class="bi bi-car-front-fill me-2"></i> FASTRIDE</h1>
+                <p class="mb-0 opacity-75">Premium Car Rental Services</p>
             </div>
-            <div style="text-align: right;">
-                <p><strong>INVOICE</strong></p>
-                <p>#<?php echo $rental['id']; ?></p>
-                <p>Date: <?php echo date('d M Y'); ?></p>
-            </div>
-        </div>
-
-        <div class="info-section">
-            <div class="info-block" style="width: 48%;">
-                <h3>Billed To:</h3>
-                <p><strong><?php echo $rental['customer_name']; ?></strong></p>
-                <p><?php echo $rental['customer_email']; ?></p>
-                <p><?php echo $rental['customer_phone']; ?></p>
-            </div>
-            <div style="width: 48%;">
-                <h3>Booking Details:</h3>
-                <p><strong>Status:</strong> <span class="status-badge status-<?php echo $rental['status']; ?>"><?php echo $rental['status']; ?></span></p>
-                <p><strong>Period:</strong> <?php echo $rental['start_date']; ?> to <?php echo $rental['end_date']; ?></p>
-                <p><strong>ID:</strong> RENT-<?php echo str_pad($rental['id'], 5, '0', STR_PAD_LEFT); ?></p>
+            <div class="text-end">
+                <h2 class="mb-0">INVOICE</h2>
+                <p class="mb-0 opacity-75">#FR-<?php echo str_pad($rentalId, 5, '0', STR_PAD_LEFT); ?></p>
             </div>
         </div>
+        
+        <div class="invoice-body">
+            <div class="row mb-5">
+                <div class="col-6">
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Billed To:</h6>
+                    <h5 class="fw-bold mb-1"><?php echo $rental['customer_name']; ?></h5>
+                    <p class="text-muted mb-1"><?php echo $rental['customer_email']; ?></p>
+                    <p class="text-muted mb-0"><?php echo $rental['customer_phone']; ?></p>
+                </div>
+                <div class="col-6 text-end">
+                    <h6 class="text-muted text-uppercase fw-bold mb-3">Rental Details:</h6>
+                    <p class="mb-1"><strong>Date:</strong> <?php echo date('d M Y', strtotime($rental['created_at'])); ?></p>
+                    <p class="mb-1"><strong>Period:</strong> <?php echo $rental['start_date']; ?> to <?php echo $rental['end_date']; ?></p>
+                    <p class="mb-0"><strong>Status:</strong> <span class="badge bg-success">PAID</span></p>
+                </div>
+            </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Description</th>
-                    <th style="text-align: center;">Days</th>
-                    <th style="text-align: right;">Rate / Day</th>
-                    <th style="text-align: right;">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <strong><?php echo $rental['vehicle_brand'] . ' ' . $rental['vehicle_name']; ?></strong><br>
-                        <small>Premium Rental Vehicle</small>
-                    </td>
-                    <td style="text-align: center;"><?php echo $rental['days']; ?></td>
-                    <td style="text-align: right;">$<?php echo number_format($rental['total_amount'] / ($rental['days'] ?: 1), 2); ?></td>
-                    <td style="text-align: right;">$<?php echo number_format($rental['total_amount'], 2); ?></td>
-                </tr>
-            </tbody>
-        </table>
+            <table class="table table-custom mb-5">
+                <thead>
+                    <tr>
+                        <th class="ps-0">Description</th>
+                        <th class="text-center">Days</th>
+                        <th class="text-end">Rate/Day</th>
+                        <th class="text-end pe-0">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="ps-0">
+                            <h6 class="fw-bold mb-1"><?php echo $rental['brand'] . ' ' . $rental['car_name']; ?></h6>
+                            <small class="text-muted">Plate: <?php echo $rental['license_plate']; ?> | Color: <?php echo $rental['color']; ?></small>
+                        </td>
+                        <td class="text-center"><?php echo $rental['days']; ?></td>
+                        <td class="text-end">$<?php echo number_format($rental['rent_per_day'], 2); ?></td>
+                        <td class="text-end pe-0 fw-bold">$<?php echo number_format($rental['total_amount'], 2); ?></td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <div class="total-section">
-            <p style="margin-bottom: 5px; color: #64748b;">Grand Total</p>
-            <div class="total-amount">$<?php echo number_format($rental['total_amount'], 2); ?></div>
-        </div>
+            <div class="row">
+                <div class="col-7">
+                    <div class="p-3 border rounded-3 bg-light opacity-75 small">
+                        <strong>Terms & Conditions:</strong><br>
+                        - Please bring your original driving license at the time of pickup.<br>
+                        - Vehicles should be returned with a full tank of fuel.<br>
+                        - Any damage occurred during the rental period is subject to insurance claims.
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="total-section">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal:</span>
+                            <span>$<?php echo number_format($rental['total_amount'], 2); ?></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Tax (0%):</span>
+                            <span>$0.00</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h5 class="fw-bold mb-0">Total Paid:</h5>
+                            <h5 class="fw-bold mb-0 text-primary">$<?php echo number_format($rental['total_amount'], 2); ?></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="footer-note">
-            <p>Thank you for choosing FastRide! Drive safely.</p>
-            <p>This is a computer-generated invoice and doesn't require a physical signature.</p>
+            <div class="text-center mt-5 no-print">
+                <button onclick="window.print()" class="btn btn-primary btn-lg px-5 rounded-pill shadow btn-print">
+                    <i class="bi bi-printer me-2"></i> Print or Save as PDF
+                </button>
+            </div>
         </div>
     </div>
+</div>
+
 </body>
 </html>

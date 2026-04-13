@@ -10,6 +10,24 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
+// Handle POST: Request Return
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    if ($data && isset($data['action']) && $data['action'] === 'request_return') {
+        $rentalId = (int)$data['id'];
+        try {
+            $stmt = $pdo->prepare("UPDATE rentals SET return_status = 'Requested' WHERE id = ? AND customer_email = ? AND (status = 'Ongoing' OR status = 'Confirmed')");
+            $stmt->execute([$rentalId, $_SESSION['user']['email']]);
+            echo json_encode(['message' => 'Return requested successfully']);
+            exit;
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['message' => $e->getMessage()]);
+            exit;
+        }
+    }
+}
+
 try {
     $email = $_SESSION['user']['email'];
     
@@ -32,6 +50,7 @@ try {
             'end_date' => $r['end_date'],
             'total_amount' => $r['total_amount'],
             'status' => $r['status'],
+            'return_status' => $r['return_status'] ?? 'None',
             'is_rated' => (bool)$r['is_rated'],
             'vehicle' => [
                 'id' => $r['vehicle_id'],

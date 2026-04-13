@@ -309,4 +309,86 @@ include 'includes/header.php';
     </div>
   </div>
 
+
+  <!-- Featured Fleet Section -->
+  <section class="py-5 bg-light">
+    <div class="container py-5">
+      <div class="text-center mb-5 fade-in-scroll">
+        <span class="badge bg-primary bg-opacity-10 text-primary mb-2 px-3 py-2 rounded-pill">Exclusive</span>
+        <h2 class="fw-bold display-5 mb-3">Featured Fleet</h2>
+        <p class="text-muted mx-auto" style="max-width: 600px;">Explore our most popular rides this week, curated for performance and luxury.</p>
+      </div>
+      <div class="row g-4 justify-content-center">
+        <?php
+        // PHP array for images as requested
+        $featuredVehicles = [
+          [
+            'id' => 52,
+            'brand' => 'Tesla',
+            'name' => 'Model S',
+            'price' => 150,
+            'images' => [
+              'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80',
+              'https://images.unsplash.com/photo-1554744480-cd197503e232?auto=format&fit=crop&w=800&q=80',
+              'https://images.unsplash.com/photo-1536700503339-1e4b06520771?auto=format&fit=crop&w=800&q=80'
+            ]
+          ],
+          [
+            'id' => 53,
+            'brand' => 'Porsche',
+            'name' => 'Cayenne',
+            'price' => 200,
+            'images' => [
+              'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80',
+              'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80'
+            ]
+          ],
+          [
+            'id' => 78,
+            'brand' => 'Mahindra',
+            'name' => 'XUV700',
+            'price' => 95,
+            'images' => [
+              'https://images.unsplash.com/photo-1619682817481-e994891cd1f5?auto=format&fit=crop&w=800&q=80',
+              'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80'
+            ]
+          ]
+        ];
+
+        foreach ($featuredVehicles as $v): ?>
+          <div class="col-md-4 fade-in-scroll">
+            <div class="premium-slider-card" data-vehicle-id="<?php echo $v['id']; ?>">
+              <div class="card-slider-container">
+                <button class="slider-btn btn-prev">❮</button>
+                <button class="slider-btn btn-next">❯</button>
+                <div class="card-slider-wrapper">
+                  <?php foreach ($v['images'] as $img): ?>
+                    <div class="card-slide">
+                      <img src="<?php echo $img; ?>" alt="<?php echo $v['name']; ?>" loading="lazy">
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+                <div class="slider-indicators">
+                  <?php foreach ($v['images'] as $i => $img): ?>
+                    <div class="indicator-dot <?php echo $i === 0 ? 'active' : ''; ?>"></div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+              <div class="p-4">
+                <div class="small fw-bold text-accent text-uppercase mb-1"><?php echo htmlspecialchars($v['brand']); ?></div>
+                <h4 class="fw-bold mb-3"><?php echo htmlspecialchars($v['name']); ?></h4>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fs-4 fw-bold text-success">$<?php echo $v['price']; ?><small class="fs-6 text-muted">/day</small></span>
+                  <a href="vehicle-details.php?id=<?php echo $v['id']; ?>" class="btn btn-primary rounded-pill px-4 shadow-sm fw-bold">View Details</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+
+  <script>document.addEventListener('DOMContentLoaded', initCardSliders);</script>
+
 <?php include 'includes/footer.php'; ?>

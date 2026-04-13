@@ -18,12 +18,11 @@ CREATE TABLE IF NOT EXISTS customers (
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
-    role ENUM('customer', 'admin') DEFAULT 'customer',
-    profile_picture VARCHAR(255),
     favorites JSON,
     loyalty_points INT DEFAULT 0,
     is_verified BOOLEAN DEFAULT FALSE,
     driver_license_url VARCHAR(255),
+    role ENUM('customer', 'admin', 'maintenance', 'delivery') DEFAULT 'customer',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -43,8 +42,22 @@ CREATE TABLE IF NOT EXISTS vehicles (
     seating_capacity INT DEFAULT 5,
     model_year INT,
     rating_average DECIMAL(3, 1) DEFAULT 0.0,
+    odometer INT DEFAULT 0,
+    fuel_level INT DEFAULT 100,
+    license_plate VARCHAR(20) DEFAULT 'TN 01 AB 1234',
+    color VARCHAR(50) DEFAULT 'White',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table for system activity logs
+CREATE TABLE IF NOT EXISTS activity_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT,
+    action VARCHAR(100),
+    details TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES customers(id)
 );
 
 -- Seed Vehicles (10 High-Quality Examples)
@@ -88,9 +101,27 @@ CREATE TABLE IF NOT EXISTS rentals (
     total_amount DECIMAL(10, 2),
     status ENUM('Pending', 'Confirmed', 'Ongoing', 'Completed', 'Cancelled') DEFAULT 'Pending',
     is_rated BOOLEAN DEFAULT FALSE,
+    delivery_employee_id INT,
+    delivery_address TEXT,
+    delivery_status ENUM('Pending', 'Assigned', 'Out for Delivery', 'Delivered') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_email) REFERENCES customers(email),
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id)
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+    FOREIGN KEY (delivery_employee_id) REFERENCES customers(id)
+);
+
+-- Table for maintenance logs
+CREATE TABLE IF NOT EXISTS maintenance_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vehicle_id INT,
+    staff_id INT,
+    category ENUM('Oil Change', 'Tire Rotation', 'Brake Service', 'Engine Check', 'General Cleaning', 'Other'),
+    description TEXT,
+    cost DECIMAL(10, 2) DEFAULT 0.00,
+    odometer_at_service INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(id),
+    FOREIGN KEY (staff_id) REFERENCES customers(id)
 );
 
 -- Table for payments

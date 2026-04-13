@@ -39,7 +39,15 @@ try {
 
         $stmt = $pdo->prepare("INSERT INTO vehicles (name, brand, type, rent_per_day, status, image, description, transmission, fuel_type, seating_capacity, model_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$name, $brand, $type, $rent, $status, $image, $description, $transmission, $fuel_type, $seating_capacity, $model_year]);
-        echo json_encode(['message' => 'Vehicle added successfully', 'id' => $pdo->lastInsertId()]);
+        $newId = $pdo->lastInsertId();
+
+        // 5. Log Activity
+        try {
+            $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, 'Vehicle Added', ?)");
+            $logStmt->execute([$_SESSION['user']['id'], "Added new vehicle: {$brand} {$name} (#{$newId})"]);
+        } catch (Exception $e) { }
+
+        echo json_encode(['message' => 'Vehicle added successfully', 'id' => $newId]);
 
     } elseif ($method === 'PUT') {
         $input = json_decode(file_get_contents('php://input'), true);
@@ -76,6 +84,13 @@ try {
         $params[] = $id;
         $stmt = $pdo->prepare("UPDATE vehicles SET " . implode(', ', $fields) . " WHERE id = ?");
         $stmt->execute($params);
+
+        // 5. Log Activity
+        try {
+            $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, 'Vehicle Updated', ?)");
+            $logStmt->execute([$_SESSION['user']['id'], "Updated vehicle details for ID #{$id}"]);
+        } catch (Exception $e) { }
+
         echo json_encode(['message' => 'Vehicle updated successfully']);
 
     } elseif ($method === 'DELETE') {
@@ -83,6 +98,13 @@ try {
         if (!$id) { http_response_code(400); exit; }
         $stmt = $pdo->prepare("UPDATE vehicles SET is_active = 0 WHERE id = ?");
         $stmt->execute([$id]);
+
+        // 5. Log Activity
+        try {
+            $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, 'Vehicle Deleted', ?)");
+            $logStmt->execute([$_SESSION['user']['id'], "Deactivated vehicle ID #{$id}"]);
+        } catch (Exception $e) { }
+
         echo json_encode(['message' => 'Vehicle deleted successfully']);
     }
 

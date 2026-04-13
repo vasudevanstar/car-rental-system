@@ -39,7 +39,9 @@ try {
         'role' => $user['role'],
         'profilePicture' => $user['profile_picture'],
         'favorites' => !empty($user['favorites']) ? json_decode($user['favorites'], true) : [],
-        'loyaltyPoints' => $user['loyalty_points'] ?? 0
+        'loyaltyPoints' => $user['loyalty_points'] ?? 0,
+        'is_verified' => (bool)$user['is_verified'],
+        'driver_license_url' => $user['driver_license_url']
     ];
 
     // Store in session

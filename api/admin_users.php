@@ -32,6 +32,11 @@ try {
             $stmt = $pdo->prepare("UPDATE customers SET is_active = NOT is_active WHERE id = ?");
             $stmt->execute([$userId]);
             echo json_encode(['message' => 'User status updated successfully']);
+        } elseif ($action === 'change_role') {
+            $newRole = $data['role'];
+            $stmt = $pdo->prepare("UPDATE customers SET role = ? WHERE id = ?");
+            $stmt->execute([$newRole, $userId]);
+            echo json_encode(['message' => 'User role updated to ' . $newRole]);
         } else {
             throw new Error('Invalid action');
         }

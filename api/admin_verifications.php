@@ -31,6 +31,14 @@ try {
             $stmt = $pdo->prepare("UPDATE customers SET driver_license_url = NULL, is_verified = 0 WHERE id = ?");
         }
         $stmt->execute([$id]);
+
+        // 5. Log Activity
+        try {
+            $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)");
+            $action = $verified ? 'User Verified' : 'Verification Rejected';
+            $logStmt->execute([$_SESSION['user']['id'], $action, "Processed verification for Customer ID #{$id}"]);
+        } catch (Exception $e) { }
+
         echo json_encode(['message' => $verified ? 'User verified' : 'Verification rejected']);
     }
 } catch (PDOException $e) {

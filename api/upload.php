@@ -9,12 +9,14 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-$type = isset($_GET['type']) ? $_GET['type'] : 'profile'; // 'profile' or 'license'
-$field = ($type === 'license') ? 'licenseImage' : 'image';
+// Determine upload type based on route or field name
+$requestUri = $_SERVER['REQUEST_URI'];
+$isLicense = (strpos($requestUri, 'upload-license') !== false) || isset($_FILES['licenseImage']);
+$field = $isLicense ? 'licenseImage' : 'image';
 
 if (!isset($_FILES[$field])) {
     http_response_code(400);
-    echo json_encode(['message' => 'No file uploaded']);
+    echo json_encode(['message' => 'No file uploaded under expected field: ' . $field]);
     exit;
 }
 
@@ -26,12 +28,25 @@ $targetPath = UPLOAD_DIR . $filename;
 if (move_uploaded_file($file['tmp_name'], $targetPath)) {
     $url = 'uploads/' . $filename;
     
-    if ($type === 'license') {
+    if ($isLicense) {
         try {
             $stmt = $pdo->prepare("UPDATE customers SET driver_license_url = ?, is_verified = 0 WHERE id = ?");
             $stmt->execute([$url, $_SESSION['user']['id']]);
+            // Update session data to reflect change
+            $_SESSION['user']['driver_license_url'] = $url;
+            $_SESSION['user']['is_verified'] = 0;
         } catch (PDOException $e) {
-            // Log error
+            http_response_code(500);
+            echo json_encode(['message' => 'DB Error: ' . $e->getMessage()]);
+            exit;
+        }
+    } else {
+        try {
+            $stmt = $pdo->prepare("UPDATE customers SET profile_picture = ? WHERE id = ?");
+            $stmt->execute([$url, $_SESSION['user']['id']]);
+            $_SESSION['user']['profile_picture'] = $url;
+        } catch (PDOException $e) {
+            // Silently fail or log
         }
     }
 

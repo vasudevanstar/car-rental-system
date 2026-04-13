@@ -24,10 +24,21 @@ $customerEmail = $_SESSION['user']['email'];
 // Verify user exists in DB (Handle cases after DB reset)
 $userCheck = $pdo->prepare("SELECT id FROM customers WHERE email = ? AND is_active = 1");
 $userCheck->execute([$customerEmail]);
-if (!$userCheck->fetch()) {
+$userRes = $userCheck->fetch();
+if (!$userRes) {
     session_destroy();
     http_response_code(401);
     echo json_encode(['message' => 'User account no longer exists. Please sign in again.']);
+    exit;
+}
+
+// Check verification status
+$stmt = $pdo->prepare("SELECT is_verified FROM customers WHERE email = ?");
+$stmt->execute([$customerEmail]);
+$userStatus = $stmt->fetch();
+if (!$userStatus['is_verified']) {
+    http_response_code(403);
+    echo json_encode(['message' => 'Identity verification required. Please visit your profile to upload your documents.']);
     exit;
 }
 
@@ -75,6 +86,17 @@ try {
     ");
     $stmt->execute([$customerEmail, $vehicleId, $startDate, $endDate, $days, $total_amount]);
     $rentalId = $pdo->lastInsertId();
+
+    // 5. Log Activity & Update Virtual Odometer (Simulated)
+    try {
+        $logStmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)");
+        $logStmt->execute([$userRes['id'], 'Booking Created', "Vehicle: {$vehicle['brand']} {$vehicle['name']} (#{$vehicleId}), Amount: \${$total_amount}"]);
+        
+        // Simulating wear and tear: add 50 miles per day booked
+        $milesToAdd = $days * 50;
+        $odoStmt = $pdo->prepare("UPDATE vehicles SET odometer = odometer + ? WHERE id = ?");
+        $odoStmt->execute([$milesToAdd, $vehicleId]);
+    } catch (Exception $e) { /* Non-critical error */ }
 
     echo json_encode([
         'message' => 'Booking created and pending confirmation',
