@@ -4,16 +4,21 @@
 // Load Composer Autoloader
 require_once __DIR__ . '/../vendor/autoload.php';
 
-// Load Environment Variables
+// Load Environment Variables (for Railway/Local)
 if (file_exists(__DIR__ . '/../.env')) {
     $dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
     $dotenv->safeLoad();
 }
 
-$host = getenv('DB_HOST') ?: 'localhost';
-$db   = getenv('DB_NAME') ?: 'car_rental';
-$user = getenv('DB_USER') ?: 'root';
-$pass = getenv('DB_PASSWORD') ?: '';
+// Support for local config.php (for InfinityFree/Shared Hosting)
+if (file_exists(__DIR__ . '/config.php')) {
+    include __DIR__ . '/config.php';
+}
+
+$host = getenv('DB_HOST') ?: ($config['db_host'] ?? 'localhost');
+$db   = getenv('DB_NAME') ?: ($config['db_name'] ?? 'car_rental');
+$user = getenv('DB_USER') ?: ($config['db_user'] ?? 'root');
+$pass = getenv('DB_PASSWORD') ?: ($config['db_pass'] ?? '');
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
