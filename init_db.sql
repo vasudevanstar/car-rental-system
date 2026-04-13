@@ -1,6 +1,6 @@
 -- Database: car_rental
-CREATE DATABASE IF NOT EXISTS car_rental;
-USE car_rental;
+-- CREATE DATABASE IF NOT EXISTS car_rental;
+-- USE car_rental;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS reviews;
