@@ -5,7 +5,7 @@ include 'includes/header.php';
 
   <!-- Hero Section -->
   <section class="hero-section text-center position-relative d-flex align-items-center justify-content-center"
-    style="min-height: 90vh; padding-top: 80px;">
+    style="min-height: 90vh; padding-top: 5vh; padding-bottom: 5vh;">
     <div class="container hero-content z-3">
       <div class="row justify-content-center">
         <div class="col-lg-10 col-xl-8 fade-in-scroll">
@@ -13,7 +13,7 @@ include 'includes/header.php';
             class="badge bg-primary bg-opacity-25 text-white mb-3 py-2 px-3 rounded-pill border border-white border-opacity-25"
             style="backdrop-filter: blur(5px); font-weight: 500; letter-spacing: 1px;"><i
               class="bi bi-star-fill text-warning me-1"></i> #1 Rated Car Rental Service</span>
-          <h1 class="display-3 fw-bold mb-4 text-white" style="text-shadow: 0 4px 15px rgba(0,0,0,0.3);">Drive Your
+          <h1 class="display-3 fw-bold mb-4 text-white" style="text-shadow: 0 4px 15px rgba(0,0,0,0.3); line-height: 1.1;">Drive Your
             Dream Car Today</h1>
           <p class="lead mb-5 text-white-50 px-md-5">Experience the thrill of the road with our premium fleet.
             Affordable rates, 24/7 support, and zero hidden fees. Your journey begins here.</p>
@@ -44,25 +44,25 @@ include 'includes/header.php';
           <div class="glass-panel p-2 p-md-3 mx-auto rounded-pill border border-white border-opacity-25 shadow-lg"
             style="max-width: 850px; background: rgba(15, 23, 42, 0.4);">
             <form action="vehicles.php" method="GET" class="row g-2 align-items-center m-0">
-              <div class="col-md-5">
+              <div class="col-8 col-md-5">
                 <div class="input-group">
-                  <span class="input-group-text bg-transparent border-0 text-white-50 fs-5"><i
+                  <span class="input-group-text bg-transparent border-0 text-white-50 fs-5 ps-3"><i
                       class="bi bi-search"></i></span>
                   <input type="text" name="search"
                     class="form-control border-0 shadow-none bg-transparent text-white fs-5 px-0 custom-search"
-                    placeholder="Search brand or model..." style="color:white!important;">
+                    placeholder="Search fleet..." style="color:white!important;">
                 </div>
               </div>
-              <div class="col-md-3 border-start border-white border-opacity-25 d-none d-md-block">
+              <div class="col-4 col-md-3 border-start border-white border-opacity-25 px-2">
                 <select name="type"
-                   class="form-select border-0 shadow-none bg-transparent text-white fs-5 cursor-pointer">
-                  <option value="" class="text-dark">Any Type</option>
+                   class="form-select border-0 shadow-none bg-transparent text-white fs-5 cursor-pointer px-1">
+                  <option value="" class="text-dark">All Types</option>
                   <option value="SUV" class="text-dark">SUV</option>
                   <option value="Sedan" class="text-dark">Sedan</option>
                   <option value="Luxury" class="text-dark">Luxury</option>
                 </select>
               </div>
-              <div class="col-md-4 ps-md-3">
+              <div class="col-12 col-md-4 ps-md-3">
                 <button type="submit"
                   class="btn btn-primary w-100 py-3 rounded-pill fw-bold text-uppercase shadow-sm">Find Vehicle <i
                     class="bi bi-car-front ms-1"></i></button>

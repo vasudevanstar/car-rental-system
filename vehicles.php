@@ -3,7 +3,7 @@ $pageTitle = "Vehicles - FastRide";
 include 'includes/header.php';
 ?>
 
-  <div class="container" style="margin-top: 100px;">
+  <div class="container responsive-mt mb-5">
     <div class="text-center mb-5">
       <h2 class="fw-bold display-5">Available Vehicles</h2>
       <p class="text-muted fs-5">Find the perfect ride for your next journey.</p>
@@ -21,9 +21,9 @@ include 'includes/header.php';
           </div>
         </div>
         
-        <div class="col-md-6 col-lg-2">
+        <div class="col-6 col-md-4 col-lg-2">
           <label class="small fw-bold text-muted text-uppercase mb-2 d-block" style="letter-spacing: 1px;">Vehicle Type</label>
-          <select id="typeFilter" class="form-select border-0 bg-light py-3 shadow-none" style="border-radius: 12px; height: 52px;">
+          <select id="typeFilter" class="form-select border-0 bg-light py-3 shadow-none" style="border-radius: 12px; height: 52px; font-size: 0.9rem;">
             <option value="">🚗 All Types</option>
             <option value="Sedan">Sedan</option>
             <option value="Luxury">Luxury</option>
@@ -32,10 +32,10 @@ include 'includes/header.php';
             <option value="Hatchback">Hatchback</option>
           </select>
         </div>
-
-        <div class="col-md-6 col-lg-2">
+        
+        <div class="col-6 col-md-4 col-lg-2">
           <label class="small fw-bold text-muted text-uppercase mb-2 d-block" style="letter-spacing: 1px;">Brand</label>
-          <select id="brandFilter" class="form-select border-0 bg-light py-3 shadow-none" style="border-radius: 12px; height: 52px;">
+          <select id="brandFilter" class="form-select border-0 bg-light py-3 shadow-none" style="border-radius: 12px; height: 52px; font-size: 0.9rem;">
             <option value="">🏷️ All Brands</option>
             <option value="Tesla">Tesla</option>
             <option value="Porsche">Porsche</option>

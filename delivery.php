@@ -127,16 +127,16 @@ try {
 </nav>
 
 <div class="container-fluid px-4 pb-5">
-    <div class="row g-4 mb-5">
-        <div class="col-md-3">
-            <div class="bg-white p-4 rounded-4 shadow-sm text-center">
-                <h6 class="text-muted small fw-bold mb-1">ALL DELIVERIES</h6>
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-md-3">
+            <div class="bg-white p-3 p-md-4 rounded-4 shadow-sm text-center border-0">
+                <h6 class="text-muted small fw-bold mb-1">DELIVERIES</h6>
                 <h3 class="fw-bold mb-0"><?php echo $totalDelivered; ?></h3>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="bg-white p-4 rounded-4 shadow-sm text-center border-start border-primary border-4">
-                <h6 class="text-muted small fw-bold mb-1">ALL RETURNS</h6>
+        <div class="col-6 col-md-3">
+            <div class="bg-white p-3 p-md-4 rounded-4 shadow-sm text-center border-start border-primary border-4">
+                <h6 class="text-muted small fw-bold mb-1">RETURNS</h6>
                 <h3 class="fw-bold mb-0"><?php echo $totalReturned; ?></h3>
             </div>
         </div>
@@ -149,20 +149,22 @@ try {
         </div>
     <?php endif; ?>
 
-    <ul class="nav nav-pills nav-pills-custom gap-2 mb-4">
-        <li class="nav-item">
-            <a class="nav-link <?php echo $tab === 'active_delivery' ? 'active' : ''; ?>" href="delivery.php?tab=active_delivery"><i class="bi bi-truck me-2"></i> My Deliveries</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link <?php echo $tab === 'return_pool' ? 'active' : ''; ?>" href="delivery.php?tab=return_pool"><i class="bi bi-collection me-2"></i> Return Pool</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link <?php echo $tab === 'my_returns' ? 'active' : ''; ?>" href="delivery.php?tab=my_returns"><i class="bi bi-arrow-return-left me-2"></i> My Returns</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link <?php echo $tab === 'history' ? 'active' : ''; ?>" href="delivery.php?tab=history"><i class="bi bi-clock-history me-2"></i> My History</a>
-        </li>
-    </ul>
+    <div class="overflow-auto pb-2 mb-4" style="mask-image: linear-gradient(to right, black 90%, transparent); -webkit-mask-image: linear-gradient(to right, black 90%, transparent);">
+        <ul class="nav nav-pills nav-pills-custom gap-2 flex-nowrap" style="width: max-content;">
+            <li class="nav-item">
+                <a class="nav-link <?php echo $tab === 'active_delivery' ? 'active' : ''; ?>" href="delivery.php?tab=active_delivery"><i class="bi bi-truck me-1"></i> Deliveries</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $tab === 'return_pool' ? 'active' : ''; ?>" href="delivery.php?tab=return_pool"><i class="bi bi-collection me-1"></i> Pool</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $tab === 'my_returns' ? 'active' : ''; ?>" href="delivery.php?tab=my_returns"><i class="bi bi-arrow-return-left me-1"></i> My Returns</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $tab === 'history' ? 'active' : ''; ?>" href="delivery.php?tab=history"><i class="bi bi-clock-history me-1"></i> History</a>
+            </li>
+        </ul>
+    </div>
 
     <div class="card card-custom">
         <div class="table-responsive">
@@ -198,7 +200,7 @@ try {
                                     <?php elseif ($tab === 'my_returns' || $tab === 'return_pool'): ?>
                                         <div class="small fw-bold text-danger">Return: <?php echo $r['end_date']; ?></div>
                                     <?php else: ?>
-                                        <div class="small text-muted">Updated: <?php echo $r['updated_at']; ?></div>
+                                        <div class="small text-muted">Updated: <?php echo $r['updated_at'] ?? $r['end_date'] ?? 'N/A'; ?></div>
                                     <?php endif; ?>
                                 </td>
                                 <td><div class="small" style="max-width:200px;"><?php echo $r['delivery_address'] ?? 'N/A'; ?></div></td>

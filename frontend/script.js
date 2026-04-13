@@ -197,6 +197,21 @@ const updateNavbar = () => {
   const msg = urlParams.get('msg');
   if (msg) showMessage('message', decodeURIComponent(msg), 'success');
 
+  // Show welcome notification ONCE on destination page after login
+  if (sessionStorage.getItem('justLoggedIn') && !window._welcomeShown) {
+    window._welcomeShown = true;
+    const name = sessionStorage.getItem('welcomeName') || 'there';
+    const role = sessionStorage.getItem('welcomeRole') || 'customer';
+    const roleEmoji = { admin: '👑', delivery: '🚚', maintenance: '🔧', customer: '🚗' };
+    const roleLabel = { admin: 'Admin dashboard is ready.', delivery: 'Your delivery assignments are waiting.', maintenance: 'Fleet care portal is ready.', customer: 'Ready for your next ride?' };
+    const emoji = roleEmoji[role] || '🚗';
+    const label = roleLabel[role] || roleLabel.customer;
+    setTimeout(() => showBottomNotification(`${emoji} Welcome back, ${name}! ${label}`), 600);
+    sessionStorage.removeItem('justLoggedIn');
+    sessionStorage.removeItem('welcomeName');
+    sessionStorage.removeItem('welcomeRole');
+  }
+
   const navContainer = document.querySelector('#navbarNav ul');
   if (!navContainer) return;
   const user = getUser();
@@ -284,6 +299,42 @@ const showMessage = (containerId, message, type = 'success') => {
   }, 4000);
 };
 
+// Bottom-panel notification for login/signup welcome
+const showBottomNotification = (message) => {
+  const existing = document.getElementById('bottomNotifBar');
+  if (existing) existing.remove();
+
+  const bar = document.createElement('div');
+  bar.id = 'bottomNotifBar';
+  bar.style.cssText = `
+    position: fixed; bottom: -80px; left: 50%; transform: translateX(-50%);
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: white; padding: 14px 28px; border-radius: 50px;
+    font-size: 0.9rem; font-weight: 600; letter-spacing: 0.3px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    z-index: 9999; white-space: nowrap;
+    transition: bottom 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+    opacity: 0; border: 1px solid rgba(255,255,255,0.1);
+  `;
+  bar.textContent = message;
+  document.body.appendChild(bar);
+
+  // Slide up
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.bottom = '30px';
+      bar.style.opacity = '1';
+    });
+  });
+
+  // Slide down and remove after 4s
+  setTimeout(() => {
+    bar.style.bottom = '-80px';
+    bar.style.opacity = '0';
+    setTimeout(() => bar.remove(), 500);
+  }, 4000);
+};
+
 const requestWithAuth = async (url, options = {}) => {
   const token = getToken();
   const headers = { ...(options.headers || {}) };
@@ -338,6 +389,8 @@ const registerInit = () => {
   const form = document.getElementById('registerForm');
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const btn = form.querySelector('button[type="submit"]');
+    const originalBtnText = btn.innerHTML;
     try {
       const payload = {
         name: document.getElementById('name').value.trim(),
@@ -348,11 +401,22 @@ const registerInit = () => {
       if (!payload.name || !payload.email || !payload.password || !payload.phone) {
         throw new Error('Please fill all fields');
       }
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Account...';
+      btn.disabled = true;
+
       await postData('/register', payload);
-      showMessage('message', 'Registration successful! You can login now.', 'success');
+
+      // Premium success notification
+      showMessage('message', `🎉 Welcome aboard, ${payload.name.split(' ')[0]}! Your FastRide account is ready. Please login to continue.`, 'success');
       form.reset();
+      btn.innerHTML = '✅ Account Created!';
+      setTimeout(() => {
+        window.location.href = 'login.php';
+      }, 2500);
     } catch (err) {
       showMessage('message', err.message, 'danger');
+      btn.innerHTML = originalBtnText;
+      btn.disabled = false;
     }
   });
 };
@@ -413,8 +477,12 @@ const loginInit = () => {
       localStorage.setItem('token', resp.token);
       localStorage.setItem('user', JSON.stringify(resp.user));
 
+      // Store welcome flag so destination page shows the notification
+      sessionStorage.setItem('justLoggedIn', '1');
+      sessionStorage.setItem('welcomeName', resp.user.name.split(' ')[0]);
+      sessionStorage.setItem('welcomeRole', resp.user.role);
+
       updateNavbar();
-      showMessage('message', 'Login successful! Redirecting...', 'success');
 
       setTimeout(() => {
         if (redirect) {
@@ -428,7 +496,7 @@ const loginInit = () => {
         } else {
           window.location.href = 'vehicles.php';
         }
-      }, 1000);
+      }, 800);
     } catch (err) {
       showMessage('message', err.message || 'Invalid credentials. Please try again.', 'danger');
       btn.innerHTML = originalBtnText;
@@ -955,7 +1023,12 @@ const adminInit = async () => {
                         borderWidth: 0
                     }]
                 },
-                options: { cutout: '80%', plugins: { legend: { display: false } } }
+                options: { 
+                    cutout: '80%', 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } } 
+                }
             });
         }
 
@@ -973,7 +1046,12 @@ const adminInit = async () => {
                         borderRadius: 5
                     }]
                 },
-                options: { plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }, 
+                    scales: { y: { display: false }, x: { grid: { display: false } } } 
+                }
             });
         }
 
@@ -1028,23 +1106,27 @@ const adminInit = async () => {
         const revCtx = document.getElementById('revenueChart')?.getContext('2d');
         if (revCtx) {
           if (window.revChart) window.revChart.destroy();
-          window.revChart = new Chart(revCtx, {
-            type: 'line',
-            data: {
-              labels: Object.keys(analytics.monthly_revenue || {}),
-              datasets: [{
-                label: 'Monthly Revenue ($)',
-                data: Object.values(analytics.monthly_revenue || {}),
-                borderColor: '#6366f1',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 8
-              }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-          });
+            window.revChart = new Chart(revCtx, {
+              type: 'line',
+              data: {
+                labels: Object.keys(analytics.monthly_revenue || {}),
+                datasets: [{
+                  label: 'Monthly Revenue ($)',
+                  data: Object.values(analytics.monthly_revenue || {}),
+                  borderColor: '#6366f1',
+                  backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 5,
+                  pointHoverRadius: 8
+                }]
+              },
+              options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } } 
+              }
+            });
         }
       } catch (err) { console.error('Analytics error:', err); }
     };

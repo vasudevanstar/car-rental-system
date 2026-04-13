@@ -115,13 +115,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
   @media (max-width: 991px) {
     .admin-sidebar {
       left: calc(-1 * var(--sidebar-width));
+      box-shadow: none;
     }
     .admin-sidebar.show {
       left: 0;
+      box-shadow: 20px 0 50px rgba(0,0,0,0.15);
     }
     .admin-main {
       margin-left: 0;
       padding: 1.5rem;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+    }
+    .sidebar-overlay.show {
+      display: block;
+    }
+  }
+
+  .mobile-toggle {
+    display: none;
+    background: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #000;
+  }
+
+  @media (max-width: 991px) {
+    .mobile-toggle {
+      display: flex;
     }
   }
 
@@ -132,8 +168,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 1.5rem;
-    height: 100%;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  @media (min-width: 992px) {
+    .stat-card { height: 100%; }
   }
 
   .stat-card:hover {
@@ -230,8 +269,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
 </style>
 
 <div class="admin-wrapper">
+  <!-- Toggle Backdrop -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileMenu()"></div>
+
   <!-- Sidebar -->
   <aside class="admin-sidebar" id="adminSidebar">
+    <div class="d-flex d-lg-none justify-content-end mb-3">
+        <button class="btn btn-light rounded-circle p-2 text-dark" onclick="toggleMobileMenu()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
     <div class="mb-5 px-2">
       <h6 class="text-uppercase small fw-bold text-muted mb-3" style="letter-spacing: 2px;">Core Menu</h6>
       <nav>
@@ -292,12 +339,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
     <div id="message"></div>
 
     <!-- Header Banner -->
-    <div class="welcome-banner d-flex justify-content-between align-items-center mb-4">
-      <div>
-        <h1 class="display-5 fw-bold mb-1">Welcome back, Admin!</h1>
-        <p class="opacity-75 mb-0 fs-5" id="currentDateDisplay"></p>
+    <div class="welcome-banner d-flex justify-content-between align-items-center mb-4 g-3">
+      <div class="d-flex align-items-center">
+        <button class="mobile-toggle me-3 d-lg-none" onclick="toggleMobileMenu()">
+           <i class="bi bi-list"></i>
+        </button>
+        <div>
+          <h1 class="display-5 fw-bold mb-1">Welcome back, Admin!</h1>
+          <p class="opacity-75 mb-0 fs-5" id="currentDateDisplay"></p>
+        </div>
       </div>
-      <div class="backdrop-blur-sm bg-white bg-opacity-20 rounded-pill px-4 py-2 border border-dark border-opacity-25 text-dark fw-bold">
+      <div class="backdrop-blur-sm bg-white bg-opacity-20 rounded-pill px-4 py-2 border border-dark border-opacity-25 text-dark fw-bold d-none d-md-block">
         <i class="bi bi-shield-check me-2"></i> System Secured
       </div>
     </div>
@@ -364,8 +416,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
          <!-- Populated via JS -->
       </div>
 
-      <div class="row g-4">
-        <div class="col-lg-7">
+      <div class="row g-4 gy-5">
+        <div class="col-12 col-lg-7">
           <div class="stat-card mb-4">
             <h5 class="fw-bold mb-4 d-flex align-items-center">
               <i class="bi bi-graph-up text-primary me-2"></i> Monthly Revenue Detail
@@ -388,8 +440,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['assignDelivery'])) {
           </div>
         </div>
         
-        <div class="col-lg-5">
-           <div class="stat-card h-100 d-flex flex-column">
+        <div class="col-12 col-lg-5">
+           <div class="stat-card d-flex flex-column">
             <h5 class="fw-bold mb-4 d-flex align-items-center">
               <i class="bi bi-list-stars text-accent me-2"></i> Recent System Activity
             </h5>
@@ -699,13 +751,38 @@ echo "<script>document.addEventListener('DOMContentLoaded', () => { if(typeof ad
     const target = document.getElementById(sectionId + 'Section');
     if (target) {
       target.style.display = 'block';
-      setTimeout(() => target.classList.add('active'), 10);
+      setTimeout(() => {
+        target.classList.add('active');
+        // Re-init charts if overview is shown
+        if (sectionId === 'overview' && typeof loadAnalytics === 'function') {
+           loadAnalytics();
+        }
+      }, 10);
     }
     
     // Update active class in sidebar
-    links.forEach(link => link.classList.remove('active'));
     if (event && event.currentTarget) {
+      links.forEach(link => link.classList.remove('active'));
       event.currentTarget.classList.add('active');
+    }
+
+    // Auto-hide on mobile after selection
+    if (window.innerWidth < 992) {
+      toggleMobileMenu();
+    }
+  }
+
+  function toggleMobileMenu() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('show');
+    overlay.classList.toggle('show');
+    
+    // Toggle body scroll
+    if (sidebar.classList.contains('show')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
     }
   }
 
