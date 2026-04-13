@@ -26,6 +26,9 @@ $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
+    // Enable SSL for secure providers like TiDB Cloud
+    PDO::MYSQL_ATTR_SSL_CA       => getenv('DB_SSL_CA') ?: true,
+    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => (getenv('DB_SSL_VERIFY') !== 'false'),
 ];
 
 try {
