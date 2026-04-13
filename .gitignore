@@ -3,3 +3,4 @@ composer.phar
 .vscode/
 uploads/
 *.log
+config/config.php
