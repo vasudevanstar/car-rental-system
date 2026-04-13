@@ -1829,6 +1829,14 @@ const indexInit = async () => {
   } catch(e) { }
 };
 
+const deliveryInit = () => {
+  console.log('Delivery Portal Initialized');
+};
+
+const maintenanceInit = () => {
+  console.log('Maintenance Portal Initialized');
+};
+
 const init = () => {
   updateNavbar();
   currencyInit();
@@ -1847,6 +1855,8 @@ const init = () => {
   if (page === 'admin.php') adminInit();
   if (page === 'profile.php') profileInit();
   if (page === 'vehicle-details.php') vehicleDetailsInit();
+  if (page === 'delivery.php') deliveryInit();
+  if (page === 'maintenance.php') maintenanceInit();
 };
 
 init();
